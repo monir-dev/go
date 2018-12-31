@@ -3,12 +3,15 @@ package main
 // https://www.youtube.com/watch?v=SonwZ6MF5BE
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
@@ -51,21 +54,86 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 func createBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var book Book
-	_ = json.NewDecoder(r.Body).Decode(&book)
+	json.NewDecoder(r.Body).Decode(&book)
 	book.Id = strconv.Itoa(rand.Intn(10000000)) // Mock Id
 	books = append(books, book)
 	json.NewEncoder(w).Encode(book)
 }
 
 func updateBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
+	params := mux.Vars(r) // Get params
+
+	var book Book
+	json.NewDecoder(r.Body).Decode(&book)
+
+	for i, item := range books {
+		if params["id"] == item.Id {
+			book.Id = params["id"]
+			books[i] = book
+		}
+	}
+	json.NewEncoder(w).Encode(books)
 }
 
 func deleteBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 
+	params := mux.Vars(r) // Get params
+
+	for i, item := range books {
+		if params["id"] == item.Id {
+			books = append(books[:i], books[i+1:]...)
+			break
+		}
+	}
+	json.NewEncoder(w).Encode(books)
 }
 
+type User struct {
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	Created_at string `json:"created_at"`
+	Upadted_at string `json:"upadted_at"`
+}
+
+var users []User
+
 func main() {
+
+	// connect to database
+	db, err := sql.Open("mysql", "root:@/node-start")
+	defer db.Close()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	// query
+	rows, err := db.Query("SELECT * FROM users")
+	checkErr(err)
+
+	for rows.Next() {
+		var id int
+		var name string
+		var email string
+		var password string
+		var created_at string
+		var upadted_at string
+		err = rows.Scan(&id, &name, &email, &password, &created_at, &upadted_at)
+		checkErr(err)
+		user := User{ID: id, Name: name, Email: email, Password: password, Created_at: created_at, Upadted_at: upadted_at}
+
+		users = append(users, user)
+	}
+	fmt.Println(users)
+
 	// init router
 	r := mux.NewRouter()
 
@@ -79,8 +147,14 @@ func main() {
 	r.HandleFunc("/api/books/{id}", getBook).Methods("GET")
 	r.HandleFunc("/api/books", createBook).Methods("POST")
 	r.HandleFunc("/api/books/{id}", updateBook).Methods("PUT")
-	r.HandleFunc("/api/books", deleteBook).Methods("DELETE")
+	r.HandleFunc("/api/books/{id}", deleteBook).Methods("DELETE")
 
 	// Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(":4000", r))
+}
+
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
