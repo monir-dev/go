@@ -7,8 +7,14 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
+type Person struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
 type MyClaims struct {
-	Name string `json:"name"`
+	User Person
 	jwt.StandardClaims
 }
 
@@ -21,16 +27,20 @@ type MyClaims struct {
 // NotBefore int64
 // Subject   string
 
-func CreateJwtToken() (string, error) {
+func CreateJwtToken(id int, name string, email string) (string, error) {
 
 	jwtTokenSecret := []byte(getJwtTokenSecretKey())
 
 	// Create the Claims
 	claims := MyClaims{
-		"Monir",
+		Person{
+			ID:    id,
+			Name:  name,
+			Email: email,
+		},
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(1 * time.Minute).Unix(),
-			Issuer:    "Monir Hossain",
+			Issuer:    name,
 		},
 	}
 
@@ -63,7 +73,7 @@ func PurseToken(t string) (string, error) {
 		if time.Now().Unix() > claims.StandardClaims.ExpiresAt {
 			response = "Your token is expired"
 		} else if token.Valid {
-			response = "Name: " + claims.Name
+			response = "Name: " + claims.User.Name
 		}
 	} else {
 		errr = err

@@ -3,8 +3,6 @@ package router
 import (
 	model "Structure/src/Model"
 	jwt "Structure/src/system/middleware"
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -19,7 +17,7 @@ func WebRoutes(r *mux.Router, db *gorm.DB) {
 	r.HandleFunc("/", HomeHandler)
 
 	r.HandleFunc("/register", RegisterHandler).Methods("GET")
-	r.HandleFunc("/login", LoginHandler).Methods("GET")
+	r.HandleFunc("/login", LoginHandler).Methods("POST")
 
 	r.Handle("/check", IsAuthenticated(CheckHandler))
 
@@ -28,24 +26,37 @@ func WebRoutes(r *mux.Router, db *gorm.DB) {
 }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	token, err := jwt.CreateJwtToken()
-	if err != nil {
-		w.Write([]byte("err"))
-	} else {
-		w.Write([]byte(token))
-	}
+	// token, err := jwt.CreateJwtToken()
+	// if err != nil {
+	// 	w.Write([]byte("err"))
+	// } else {
+	// 	w.Write([]byte(token))
+	// }
+	w.Write([]byte("Home"))
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
-	var users []model.User
+	var user model.User
+
+	var email = r.FormValue("email")
+	var password = r.FormValue("password")
+
+	// email = "lkjasdfl"
 
 	// DB.First(&user, 1)
-	DB.Find(&users)
+	DB.Where("email = ? AND password = ?", email, password).First(&user)
 
-	log.Println(users)
-
-	fmt.Println("here")
+	if user.Email == "" {
+		w.Write([]byte("Invalid Username and password"))
+	} else {
+		token, err := jwt.CreateJwtToken(user.ID, user.Name, user.Email)
+		if err != nil {
+			w.Write([]byte("Token creation error"))
+		} else {
+			w.Write([]byte(token))
+		}
+	}
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
