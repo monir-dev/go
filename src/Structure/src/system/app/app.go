@@ -5,13 +5,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/go-xorm/xorm"
 	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
 )
 
 type Server struct {
 	port string
-	Db   *xorm.Engine
+	DB   *gorm.DB
 }
 
 func NewServer() Server {
@@ -19,10 +19,10 @@ func NewServer() Server {
 }
 
 // init all vals
-func (s *Server) Init(port string, db *xorm.Engine) {
+func (s *Server) Init(port string, db *gorm.DB) {
 	log.Println("Initializing server...")
 	s.port = ":" + port
-	s.Db = db
+	s.DB = db
 }
 
 // start the server
@@ -32,7 +32,7 @@ func (s *Server) Start() {
 	// initialize routes
 	r := mux.NewRouter().StrictSlash(true)
 	r.Use(AuthMiddleware)
-	router.Routes(r)
+	router.Routes(r, s.DB)
 
 	http.ListenAndServe(s.port, r)
 }

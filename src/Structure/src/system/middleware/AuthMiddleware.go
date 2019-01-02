@@ -8,9 +8,18 @@ import (
 )
 
 type MyClaims struct {
-	Foo string `json:"foo"`
+	Name string `json:"name"`
 	jwt.StandardClaims
 }
+
+// Standared Claim properties
+// Audience  string
+// ExpiresAt int64
+// Id        string
+// IssuedAt  int64
+// Issuer    string
+// NotBefore int64
+// Subject   string
 
 func CreateJwtToken() (string, error) {
 
@@ -20,8 +29,8 @@ func CreateJwtToken() (string, error) {
 	claims := MyClaims{
 		"Monir",
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
-			Issuer:    "test",
+			ExpiresAt: time.Now().Add(1 * time.Minute).Unix(),
+			Issuer:    "Monir Hossain",
 		},
 	}
 
@@ -34,36 +43,32 @@ func CreateJwtToken() (string, error) {
 	return token, nil
 }
 
-func PurseToken(t string) (string, string, error) {
+func PurseToken(t string) (string, error) {
 	tokenString := t
 
 	jwtTokenSecret := []byte(getJwtTokenSecretKey())
 
 	var response string
-	var errorMsg string
 	var errr error
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	if tokenString == "" {
+		return response, errr
+	}
+
+	token, err := jwt.ParseWithClaims(tokenString, &MyClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtTokenSecret), nil
 	})
 
-	if token.Valid {
-		response = "You look nice today"
-	} else if ve, ok := err.(*jwt.ValidationError); ok {
-		if ve.Errors&jwt.ValidationErrorMalformed != 0 {
-			errorMsg = "That's not even a token"
-		} else if ve.Errors&(jwt.ValidationErrorExpired|jwt.ValidationErrorNotValidYet) != 0 {
-			errorMsg = "Token is either expired or not active yet"
-		} else {
-			errorMsg = "Couldn't handle this token"
-			errr = err
+	if claims, ok := token.Claims.(*MyClaims); ok {
+		if time.Now().Unix() > claims.StandardClaims.ExpiresAt {
+			response = "Your token is expired"
+		} else if token.Valid {
+			response = "Name: " + claims.Name
 		}
 	} else {
-		errorMsg = "Couldn't handle this token"
 		errr = err
 	}
-
-	return response, errorMsg, errr
+	return response, errr
 }
 
 func getJwtTokenSecretKey() string {

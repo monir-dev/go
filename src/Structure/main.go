@@ -4,8 +4,10 @@ import (
 	"Structure/src/system/app"
 	DB "Structure/src/system/db"
 	"flag"
+	"log"
 	"os"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
 
@@ -48,14 +50,25 @@ func init() {
 
 func main() {
 	// initialize database
-	db, err := DB.Connect(dbhost, dbport, dbdatabase, dbuser, dbpass, dboptions)
+	db, err := DB.ConnectSql(dbdatabase, dbuser, dbpass)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
+
+	// db, err := DB.ConnectXorm(dbhost, dbport, dbdatabase, dbuser, dbpass, dboptions)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// initialize server
 	s := app.NewServer()
 
 	s.Init(port, db)
 	s.Start()
+}
+
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
