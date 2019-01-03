@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"os"
+	"strconv"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -27,7 +28,7 @@ type MyClaims struct {
 // NotBefore int64
 // Subject   string
 
-func CreateJwtToken(id int, name string, email string) (string, error) {
+func CreateJwtToken(id int, name string, email string) (map[string]string, error) {
 
 	jwtTokenSecret := []byte(getJwtTokenSecretKey())
 
@@ -39,7 +40,7 @@ func CreateJwtToken(id int, name string, email string) (string, error) {
 			Email: email,
 		},
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(1 * time.Minute).Unix(),
+			ExpiresAt: time.Now().Add(24 * time.Hour).Unix(),
 			Issuer:    name,
 		},
 	}
@@ -48,9 +49,19 @@ func CreateJwtToken(id int, name string, email string) (string, error) {
 	token, err := rawToken.SignedString(jwtTokenSecret)
 
 	if err != nil {
-		return "", err
+		var userInfo map[string]string
+		return userInfo, err
 	}
-	return token, nil
+
+	userInfo := map[string]string{
+		"id":         strconv.Itoa(claims.User.ID),
+		"name":       claims.User.Name,
+		"email":      claims.User.Email,
+		"token":      token,
+		"expires_at": strconv.FormatInt(claims.ExpiresAt, 10), // 10 means decimal convertion
+	}
+
+	return userInfo, nil
 }
 
 func PurseToken(t string) (string, error) {
@@ -73,7 +84,7 @@ func PurseToken(t string) (string, error) {
 		if time.Now().Unix() > claims.StandardClaims.ExpiresAt {
 			response = "Your token is expired"
 		} else if token.Valid {
-			response = "Name: " + claims.User.Name
+			response = strconv.Itoa(claims.User.ID)
 		}
 	} else {
 		errr = err

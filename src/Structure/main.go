@@ -2,9 +2,7 @@ package main
 
 import (
 	"Structure/src/system/app"
-	DB "Structure/src/system/db"
 	"flag"
-	"log"
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -50,10 +48,10 @@ func init() {
 
 func main() {
 	// initialize database
-	db, err := DB.ConnectSql(dbdatabase, dbuser, dbpass)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// db, err := DB.ConnectSql(dbdatabase, dbuser, dbpass)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// db, err := DB.ConnectXorm(dbhost, dbport, dbdatabase, dbuser, dbpass, dboptions)
 	// if err != nil {
@@ -63,7 +61,7 @@ func main() {
 	// initialize server
 	s := app.NewServer()
 
-	s.Init(port, db)
+	s.Init(port)
 	s.Start()
 }
 

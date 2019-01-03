@@ -6,12 +6,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jinzhu/gorm"
 )
 
 type Server struct {
 	port string
-	DB   *gorm.DB
 }
 
 func NewServer() Server {
@@ -19,10 +17,9 @@ func NewServer() Server {
 }
 
 // init all vals
-func (s *Server) Init(port string, db *gorm.DB) {
+func (s *Server) Init(port string) {
 	log.Println("Initializing server...")
 	s.port = ":" + port
-	s.DB = db
 }
 
 // start the server
@@ -32,7 +29,7 @@ func (s *Server) Start() {
 	// initialize routes
 	r := mux.NewRouter().StrictSlash(true)
 	r.Use(AuthMiddleware)
-	router.Routes(r, s.DB)
+	router.Routes(r)
 
 	http.ListenAndServe(s.port, r)
 }
@@ -40,7 +37,7 @@ func (s *Server) Start() {
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Do stuff here
-		log.Println("You are in : ", r.RequestURI)
+		log.Println("Request URI : ", r.RequestURI)
 		// Call the next handler, which can be another middleware in the chain, or the final handler.
 		next.ServeHTTP(w, r)
 	})
